@@ -233,17 +233,39 @@ Add this configuration to your `.env` file:
 
 Make sure Ollama is running before building or searching an index.
 
-### Current Limitations
+### Stage 3B — Automatic AI Context Retrieval
 
-- Indexing is limited to 30 eligible source files and 120 code chunks.
-- Files larger than 12 KB are skipped.
-- Chunking is based on lines and character limits rather than code syntax.
-- The current vector index uses local JSON storage rather than a dedicated vector database.
-- Repository indexes must be rebuilt after source code changes.
-- Semantic similarity does not guarantee that retrieved code is relevant.
-- Automatic retrieval has not yet been connected to the AI analysis endpoint.
+Integrated semantic code search with the existing local AI analyzer.
 
-### Stage 3B — Automatic AI Context Retrieval (Next)
+**Features:**
+- Automatically generate search queries from GitHub issue descriptions.
+- Retrieve relevant source-code chunks using vector embeddings and cosine similarity.
+- Provide retrieved code to Qwen2.5-Coder for AI-assisted debugging.
+- Support automatic, manual, and issue-only analysis.
+- Include retrieved source filenames, line numbers, and similarity scores in API responses.
+- Track the Git commit associated with the retrieved index.
+
+**Example request:**
+
+`POST /api/repos/AliceGe4/RepoPilot/analyze`
+
+```json
+{
+  "issue_number": 1,
+  "file_paths": [],
+  "auto_retrieve": true,
+  "top_k": 3
+}
+```
+
+The repository must first be indexed using the `/index` endpoint.
+
+**Current limitations:**
+- Retrieval quality depends on chunking, embedding quality, and repository indexing limits.
+- The model may produce incorrect diagnoses despite receiving relevant source code.
+- Repository indexes must be manually rebuilt following code changes.
+
+**Next:** Automated evaluation, improved retrieval accuracy, and frontend development.
 
 Planned improvements:
 
