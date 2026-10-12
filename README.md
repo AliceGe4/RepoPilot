@@ -155,16 +155,101 @@ RepoPilot retrieves the issue and source file from GitHub and sends them to the 
 
 The response includes a summary, possible cause, suggested debugging steps, confidence, limitations, and token usage.
 
-## Current Limitations
+## Stage 3 — Retrieval-Augmented Generation (RAG)
 
-- Source files must currently be selected manually.
-- AI output is advisory and may contain incorrect diagnoses.
-- Issue listing uses only the first page of GitHub results.
-- Filtering pull requests after fetching issues can result in fewer issues than requested.
-- Source file retrieval has size and file-type restrictions.
-- The local AI model requires Ollama to run on the host machine.
-- Automated accuracy evaluation has not yet been implemented.
+### Stage 3A — Semantic Code Search (In Progress)
 
-## Project Status
+Implemented the foundation of a local semantic search system that allows RepoPilot to find source code relevant to a GitHub issue.
 
-**Stage 2 completed — Stage 3 (RAG and semantic code search) is next.**
+Instead of relying on exact keyword matches, the system uses vector embeddings to identify code sections that may be semantically related to a problem.
+
+**Implemented functionality:**
+- Discover and retrieve repository source files through the GitHub REST API.
+- Split source files into smaller, overlapping chunks.
+- Preserve source filenames and line numbers for each chunk.
+- Generate vector embeddings locally using Ollama and `nomic-embed-text`.
+- Store embeddings and source-code metadata in a local JSON index.
+- Calculate cosine similarity between a search query and indexed code chunks.
+- Rank and return the most relevant source-code sections.
+- Cache indexes locally to avoid regenerating embeddings for every search.
+
+### Technologies
+
+- Python and FastAPI
+- Ollama
+- nomic-embed-text
+- GitHub REST API
+- Vector embeddings
+- Cosine similarity
+- JSON-based local storage
+
+### How Semantic Search Works
+
+1. Retrieve eligible source files from a GitHub repository.
+2. Divide the source code into overlapping chunks.
+3. Generate an embedding vector for each chunk.
+4. Store the vectors with their original code and file metadata.
+5. Convert a user's search query into an embedding.
+6. Compare the query embedding against stored embeddings using cosine similarity.
+7. Return the highest-ranking code chunks.
+
+### New API Endpoints
+
+**POST `/api/repos/{owner}/{repo}/index`**
+
+Downloads eligible repository files, generates embeddings, and saves the searchable index locally.
+
+**GET `/api/repos/{owner}/{repo}/search`**
+
+Searches an existing repository index using a natural-language query.
+
+Parameters:
+- `owner` — GitHub repository owner.
+- `repo` — Repository name.
+- `query` — Natural-language description of the code to find.
+- `top_k` — Maximum number of matching chunks to return (1–5).
+
+### Example Usage
+
+First, build the repository index:
+
+`POST /api/repos/AliceGe4/RepoPilot/index`
+
+Then search for relevant code:
+
+`GET /api/repos/AliceGe4/RepoPilot/search?query=GitHub%20issue%20pagination&top_k=3`
+
+The search response contains source filenames, line numbers, similarity scores, and matching code.
+
+### Local Setup
+
+Download the embedding model:
+
+`ollama pull nomic-embed-text`
+
+Add this configuration to your `.env` file:
+
+`EMBEDDING_MODEL=nomic-embed-text`
+
+Make sure Ollama is running before building or searching an index.
+
+### Current Limitations
+
+- Indexing is limited to 30 eligible source files and 120 code chunks.
+- Files larger than 12 KB are skipped.
+- Chunking is based on lines and character limits rather than code syntax.
+- The current vector index uses local JSON storage rather than a dedicated vector database.
+- Repository indexes must be rebuilt after source code changes.
+- Semantic similarity does not guarantee that retrieved code is relevant.
+- Automatic retrieval has not yet been connected to the AI analysis endpoint.
+
+### Stage 3B — Automatic AI Context Retrieval (Next)
+
+Planned improvements:
+
+- Automatically retrieve code related to a selected GitHub issue.
+- Supply the highest-ranking source-code chunks to Qwen2.5-Coder.
+- Include source-file references and line numbers in AI analyses.
+- Compare issue analyses with and without retrieved code.
+- Evaluate retrieval accuracy using known GitHub bugs.
+- Investigate persistent vector storage using PostgreSQL and pgvector.

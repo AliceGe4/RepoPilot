@@ -8,6 +8,8 @@ from ai_analyzer import AnalysisRequest, analyze_github_issue
 from fastapi import FastAPI, HTTPException, Query
 from github_client import github_get
 
+from rag_engine import build_index, search_code
+
 
 app = FastAPI(title="RepoPilot API", version="0.1.0")
 
@@ -279,5 +281,39 @@ async def analyze_issue_endpoint(
         owner,
         repo,
         request
+    )
+
+
+
+# Build a searchable repository index
+@app.post(
+    "/api/repos/{owner}/{repo}/index",
+    summary="Index repository source code",
+    tags=["Semantic Search"]
+)
+async def index_repository_endpoint(
+    owner: str,
+    repo: str
+):
+    return await build_index(owner, repo)
+
+
+# Search the indexed source code
+@app.get(
+    "/api/repos/{owner}/{repo}/search",
+    summary="Search repository code by meaning",
+    tags=["Semantic Search"]
+)
+async def search_repository_endpoint(
+    owner: str,
+    repo: str,
+    query: str = Query(min_length=3, max_length=600),
+    top_k: int = Query(default=3, ge=1, le=5)
+):
+    return await search_code(
+        owner,
+        repo,
+        query,
+        top_k
     )
 
