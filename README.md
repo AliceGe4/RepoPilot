@@ -1,88 +1,83 @@
 # RepoPilot — AI-Powered GitHub Issue Analyzer
 
-RepoPilot is an AI-powered developer tool designed to analyze GitHub issues, inspect repository source code, and help developers identify potential bugs and debugging solutions.
+RepoPilot is a full-stack developer tool that uses locally hosted AI and retrieval-augmented generation (RAG) to analyze GitHub issues and identify potentially relevant source code.
 
-The project uses **Python, FastAPI, and locally hosted AI models through Ollama**, allowing AI-assisted code analysis without paid API services.
+The application helps developers investigate bugs by retrieving GitHub issues, searching repository code using semantic similarity, and generating structured debugging suggestions.
 
-## Tech Stack
+![RepoPilot Dashboard](frontend/public/ai_issue_img.png)
 
-- **Python** — Backend development
-- **FastAPI** — REST API framework
-- **HTTPX** — Asynchronous GitHub API communication
-- **GitHub REST API** — Repository, issue, and source code retrieval
-- **Ollama** — Local AI model execution
-- **Qwen2.5-Coder 3B** — AI-powered code analysis
-- **Pydantic** — Request validation and structured AI responses
-- **Git** — Version control
+**RepoPilot runs its AI models locally through Ollama, without requiring a paid AI API.**
 
-## Development Progress
+## Key Features
 
-### Stage 1 — GitHub Integration 
-
-Implemented a FastAPI backend that communicates with the GitHub REST API.
-
-**Features:**
-- Retrieve repository information.
-- Retrieve open, closed, and all GitHub issues.
-- Retrieve individual issues by number.
-- Discover repository source files recursively.
+### GitHub Integration
+- Retrieve repository information and GitHub issues.
+- Browse open issues and select individual issues for analysis.
+- Discover and retrieve repository source files.
 - Filter source files by extension.
-- Retrieve and decode source code.
-- Handle common GitHub API errors.
 
-### Stage 2 — Local AI Integration 
-
-Integrated a locally hosted coding-focused language model using Ollama.
-
-**Features:**
+### AI-Powered Issue Analysis
 - Analyze GitHub issues using Qwen2.5-Coder 3B.
-- Include up to three manually selected source files in the analysis.
-- Generate structured JSON containing:
-  - Issue summary
-  - Possible cause
-  - Suggested debugging steps
-  - Confidence level
-  - Analysis limitations
-- Validate AI responses using Pydantic.
-- Track input and output token usage.
-- Handle common AI connection and response errors.
+- Generate issue summaries, possible causes, and debugging suggestions.
+- Return structured JSON responses with confidence levels and limitations.
+- Support three analysis modes:
+  - **Automatic (RAG):** Retrieve relevant source code automatically.
+  - **Manual:** Select specific source files for analysis.
+  - **Issue-only:** Analyze an issue without source code.
 
-**Testing:**
+### Retrieval-Augmented Generation (RAG)
+- Retrieve source code from GitHub repositories.
+- Split source code into overlapping chunks.
+- Generate vector embeddings using `nomic-embed-text`.
+- Store embeddings in a local JSON index.
+- Perform semantic code searches using cosine similarity.
+- Return matching source code with filenames, line numbers, and similarity scores.
+- Automatically supply retrieved code to the AI analyzer.
 
-Successfully tested the AI integration against Flask issue #4170 and RepoPilot issue #1.
+### React Frontend
+- Interactive dashboard built with React and TypeScript.
+- GitHub repository selection and issue browsing.
+- Repository indexing and semantic search controls.
+- AI analysis results with debugging recommendations and source references.
+- Responsive layout for desktop and mobile.
+- **Light/Dark Mode toggle**, featuring a warm light theme and the original dark-blue theme.
+- Theme preferences saved in browser local storage.
 
-The model correctly recognized pagination and filtering as possible causes of RepoPilot's issue-count bug, although it did not identify the exact fix.
+## Technology Stack
 
-These tests confirm the end-to-end integration works. More extensive accuracy evaluation is planned.
+| Category | Technologies |
+|---|---|
+| Backend | Python, FastAPI, Pydantic |
+| Frontend | React, TypeScript, Vite, CSS |
+| AI | Ollama, Qwen2.5-Coder 3B |
+| Embeddings | nomic-embed-text |
+| Retrieval | RAG, Vector Embeddings, Cosine Similarity |
+| APIs | GitHub REST API, HTTPX |
+| Storage | Local JSON Vector Index |
+| Development | Git, GitHub, npm, Uvicorn |
 
-### Stage 3 — Retrieval-Augmented Generation (Planned)
+## Project Architecture
 
-The next stage will enable RepoPilot to automatically find relevant source code instead of requiring users to select files manually.
+The application uses the following workflow:
 
-**Planned features:**
-- Retrieve and process repository source files.
-- Split source code into smaller chunks.
-- Generate embeddings using a local model.
-- Store embeddings in a vector database.
-- Implement semantic code search.
-- Automatically provide relevant code to the AI analyzer.
-- Evaluate retrieval accuracy against known issues.
+1. The user selects a GitHub repository and issue in the React frontend.
+2. The frontend sends an HTTP request to the FastAPI backend.
+3. The backend retrieves the issue description from GitHub.
+4. The semantic search engine retrieves relevant code chunks from the local vector index.
+5. The retrieved code and issue description are provided to Qwen2.5-Coder through Ollama.
+6. The AI generates a structured analysis.
+7. FastAPI returns the results to the React dashboard.
 
-### Stage 4 — Frontend (Planned)
+The backend and local AI models operate separately from the frontend.
 
-Build a React and TypeScript frontend for interacting with RepoPilot.
-
-### Stage 5 — Testing and Deployment (Planned)
-
-Implement automated testing, improve AI evaluation, and prepare the application for deployment.
-
-## Installation and Setup
+## Installation
 
 ### Prerequisites
 
 - Python 3.11 or newer
+- Node.js and npm
 - Git
-- Ollama installed locally
+- Ollama
 
 ### 1. Clone the repository
 
@@ -90,7 +85,9 @@ Implement automated testing, improve AI evaluation, and prepare the application 
 
 `cd RepoPilot`
 
-### 2. Create a virtual environment
+### 2. Set up the Python backend
+
+Create a virtual environment:
 
 `python -m venv .venv`
 
@@ -98,48 +95,97 @@ Activate it on Windows PowerShell:
 
 `.\.venv\Scripts\Activate.ps1`
 
-### 3. Install dependencies
+Install dependencies:
 
 `python -m pip install -r requirements.txt`
 
-### 4. Set up Ollama
+### 3. Install the local AI models
 
 Install Ollama from https://ollama.com/download.
 
-Download the AI model:
+Download the models:
 
 `ollama pull qwen2.5-coder:3b`
 
-Ollama must be running locally when performing AI analysis.
+`ollama pull nomic-embed-text`
 
-### 5. Configure environment variables
+Ensure Ollama is running before performing AI analysis or semantic search.
 
-Create a `.env` file in the project's root directory:
+### 4. Configure environment variables
+
+Create a `.env` file in the RepoPilot root directory.
+
+Add the following settings:
 
 `GITHUB_TOKEN=`
 
 `OLLAMA_MODEL=qwen2.5-coder:3b`
 
-The GitHub token is optional for public repositories, subject to GitHub API rate limits.
+`EMBEDDING_MODEL=nomic-embed-text`
 
-### 6. Run the backend
+A GitHub token is optional for public repositories, subject to GitHub API rate limits.
+
+Never commit real API tokens or private environment files.
+
+### 5. Start the backend
+
+From the RepoPilot root directory:
 
 `python -m uvicorn main:app --reload`
 
-Open the API documentation:
+The backend runs at:
+
+http://127.0.0.1:8000
+
+Interactive API documentation:
 
 http://127.0.0.1:8000/docs
+
+### 6. Start the frontend
+
+Open a second terminal and navigate to the frontend folder:
+
+`cd frontend`
+
+Install the frontend dependencies:
+
+`npm install`
+
+Start the development server:
+
+`npm run dev`
+
+Open the application at:
+
+http://localhost:5173
+
+Both FastAPI and Ollama must be available for AI analysis.
+
+## How to Use RepoPilot
+
+1. Open the React dashboard.
+2. Enter the GitHub repository owner and name.
+3. Click **Load GitHub issues**.
+4. Select an issue or enter its number manually.
+5. Click **Build / Rebuild Index** to prepare the repository for semantic search.
+6. Select **Automatic (RAG)**, **Manual**, or **Issue description only**.
+7. Click **Analyze with AI**.
+8. Review the summary, possible cause, suggested debugging steps, and retrieved source-code references.
+
+The semantic search section also supports direct natural-language searches against an indexed repository.
 
 ## API Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/repos/{owner}/{repo}` | Repository information |
-| GET | `/api/repos/{owner}/{repo}/issues` | List and filter issues |
-| GET | `/api/repos/{owner}/{repo}/issues/{number}` | Retrieve one issue |
-| GET | `/api/repos/{owner}/{repo}/files` | List source files |
-| GET | `/api/repos/{owner}/{repo}/files/content` | Read a source file |
-| POST | `/api/repos/{owner}/{repo}/analyze` | Analyze an issue using local AI |
+| GET | `/api/repos/{owner}/{repo}` | Retrieve repository information |
+| GET | `/api/repos/{owner}/{repo}/issues` | Retrieve and filter issues |
+| GET | `/api/repos/{owner}/{repo}/issues/{number}` | Retrieve an individual issue |
+| GET | `/api/repos/{owner}/{repo}/files` | List repository source files |
+| GET | `/api/repos/{owner}/{repo}/files/content` | Read source-file contents |
+| POST | `/api/repos/{owner}/{repo}/index` | Generate a repository vector index |
+| GET | `/api/repos/{owner}/{repo}/search` | Perform semantic code search |
+| POST | `/api/repos/{owner}/{repo}/analyze` | Analyze a GitHub issue using AI |
 
 ## Example AI Analysis
 
@@ -147,131 +193,46 @@ Send a POST request to:
 
 `/api/repos/AliceGe4/RepoPilot/analyze`
 
-Request body:
+Example JSON request:
 
-`{"issue_number": 1, "file_paths": ["main.py"]}`
+`{"issue_number": 1, "file_paths": [], "auto_retrieve": true, "top_k": 3}`
 
-RepoPilot retrieves the issue and source file from GitHub and sends them to the local AI model.
+The application retrieves Issue #1, searches the indexed repository for relevant code, and sends the results to the local AI model.
 
-The response includes a summary, possible cause, suggested debugging steps, confidence, limitations, and token usage.
+The response includes an analysis, debugging suggestions, confidence, limitations, and retrieval metadata.
 
-## Stage 3 — Retrieval-Augmented Generation (RAG)
+## Development Progress
 
-### Stage 3A — Semantic Code Search (In Progress)
+- [x] **Stage 1:** GitHub REST API integration.
+- [x] **Stage 2:** Local AI-powered issue analysis.
+- [x] **Stage 3A:** Repository indexing and semantic code search.
+- [x] **Stage 3B:** Automatic RAG integration with the AI analyzer.
+- [x] **Stage 4:** React and TypeScript frontend with theme switching.
+- [ ] **Stage 5:** Automated testing, AI evaluation, reliability improvements, and deployment planning.
 
-Implemented the foundation of a local semantic search system that allows RepoPilot to find source code relevant to a GitHub issue.
+## Current Limitations
 
-Instead of relying on exact keyword matches, the system uses vector embeddings to identify code sections that may be semantically related to a problem.
+- Local AI inference requires Ollama to be running.
+- Only public or otherwise accessible GitHub repositories are supported by the configured API permissions.
+- Repository indexing currently has file-size, file-count, and chunk-count limits.
+- Repository indexes must be rebuilt when source code changes.
+- AI analysis may produce incorrect or incomplete diagnoses.
+- Confidence levels are model-generated estimates, not calibrated accuracy probabilities.
+- The application currently runs locally and is not publicly deployed.
+- Automated evaluation and production security controls are not yet complete.
 
-**Implemented functionality:**
-- Discover and retrieve repository source files through the GitHub REST API.
-- Split source files into smaller, overlapping chunks.
-- Preserve source filenames and line numbers for each chunk.
-- Generate vector embeddings locally using Ollama and `nomic-embed-text`.
-- Store embeddings and source-code metadata in a local JSON index.
-- Calculate cosine similarity between a search query and indexed code chunks.
-- Rank and return the most relevant source-code sections.
-- Cache indexes locally to avoid regenerating embeddings for every search.
+## Future Improvements
 
-### Technologies
+- Automated unit and integration tests.
+- Retrieval-accuracy evaluation using known bugs.
+- Improved function-aware code chunking.
+- Better error handling and loading feedback.
+- Persistent vector database integration.
+- Frontend component refactoring.
+- Deployment and infrastructure improvements.
 
-- Python and FastAPI
-- Ollama
-- nomic-embed-text
-- GitHub REST API
-- Vector embeddings
-- Cosine similarity
-- JSON-based local storage
+## Project Status
 
-### How Semantic Search Works
+**Stage 4 implemented. Stage 5 — Testing, Evaluation, and Deployment — is next.**
 
-1. Retrieve eligible source files from a GitHub repository.
-2. Divide the source code into overlapping chunks.
-3. Generate an embedding vector for each chunk.
-4. Store the vectors with their original code and file metadata.
-5. Convert a user's search query into an embedding.
-6. Compare the query embedding against stored embeddings using cosine similarity.
-7. Return the highest-ranking code chunks.
-
-### New API Endpoints
-
-**POST `/api/repos/{owner}/{repo}/index`**
-
-Downloads eligible repository files, generates embeddings, and saves the searchable index locally.
-
-**GET `/api/repos/{owner}/{repo}/search`**
-
-Searches an existing repository index using a natural-language query.
-
-Parameters:
-- `owner` — GitHub repository owner.
-- `repo` — Repository name.
-- `query` — Natural-language description of the code to find.
-- `top_k` — Maximum number of matching chunks to return (1–5).
-
-### Example Usage
-
-First, build the repository index:
-
-`POST /api/repos/AliceGe4/RepoPilot/index`
-
-Then search for relevant code:
-
-`GET /api/repos/AliceGe4/RepoPilot/search?query=GitHub%20issue%20pagination&top_k=3`
-
-The search response contains source filenames, line numbers, similarity scores, and matching code.
-
-### Local Setup
-
-Download the embedding model:
-
-`ollama pull nomic-embed-text`
-
-Add this configuration to your `.env` file:
-
-`EMBEDDING_MODEL=nomic-embed-text`
-
-Make sure Ollama is running before building or searching an index.
-
-### Stage 3B — Automatic AI Context Retrieval
-
-Integrated semantic code search with the existing local AI analyzer.
-
-**Features:**
-- Automatically generate search queries from GitHub issue descriptions.
-- Retrieve relevant source-code chunks using vector embeddings and cosine similarity.
-- Provide retrieved code to Qwen2.5-Coder for AI-assisted debugging.
-- Support automatic, manual, and issue-only analysis.
-- Include retrieved source filenames, line numbers, and similarity scores in API responses.
-- Track the Git commit associated with the retrieved index.
-
-**Example request:**
-
-`POST /api/repos/AliceGe4/RepoPilot/analyze`
-
-```json
-{
-  "issue_number": 1,
-  "file_paths": [],
-  "auto_retrieve": true,
-  "top_k": 3
-}
-```
-
-The repository must first be indexed using the `/index` endpoint.
-
-**Current limitations:**
-- Retrieval quality depends on chunking, embedding quality, and repository indexing limits.
-- The model may produce incorrect diagnoses despite receiving relevant source code.
-- Repository indexes must be manually rebuilt following code changes.
-
-**Next:** Automated evaluation, improved retrieval accuracy, and frontend development.
-
-Planned improvements:
-
-- Automatically retrieve code related to a selected GitHub issue.
-- Supply the highest-ranking source-code chunks to Qwen2.5-Coder.
-- Include source-file references and line numbers in AI analyses.
-- Compare issue analyses with and without retrieved code.
-- Evaluate retrieval accuracy using known GitHub bugs.
-- Investigate persistent vector storage using PostgreSQL and pgvector.
+RepoPilot is an ongoing portfolio project focused on full-stack development, AI integration, semantic search, and practical software engineering.

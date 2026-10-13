@@ -9,9 +9,20 @@ from fastapi import FastAPI, HTTPException, Query
 from github_client import github_get
 
 from rag_engine import build_index, search_code
+from fastapi.middleware.cors import CORSMiddleware
 
 
 app = FastAPI(title="RepoPilot API", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+    ],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"]
+)
 
 # File types we want to inspect
 SOURCE_EXTENSIONS = (
